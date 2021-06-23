@@ -1,0 +1,73 @@
+---
+title: "FORECAST: TS y GRÁFICO DE LA SERIE"
+author: "JARO"
+date: "22/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(tseries)
+```
+
+# CREAR OBJETO TS
+
+Suponga que tiene observaciones anuales de los últimos años:
+
+```{r}
+y <- ts(c(123,39,78,52,110), start=2012)
+y
+```
+
+Si tiene datos anuales, con una observación por año, solo necesita proporcionar el año de inicio (o el año final). 
+
+Para las observaciones que son más frecuentes que una vez al año, simplemente agregue un argumento de frecuencia. Por ejemplo, si sus datos mensuales ya están almacenados como un vector numérico z, entonces se pueden convertir a un objeto ts como este: 
+
+```{r}
+z <- rnorm(216,2000,200)
+y1 <- ts(z, start=2003, frequency=12)
+y1
+```
+
+# GRÁFICOS DE SERIES DE TIEMPO
+
+Para este ejemplo vamos a tomar los datos generados "y1" así como la data Número total de pasajeros aéreos semanales en los vuelos de la aerolínea Ansett entre Melbourne y Sydney, 1987–1992 llamada "melsyd" y la droga para diabéticos.
+
+```{r}
+autoplot(y1)+
+  ggtitle("Ejemplo serie de tiempo de una distribución normal")+
+  xlab("Año")+ylab("Valores")
+```
+
+Se debe llamar la librería "fpp2" que contiene las datas. Empezamos observando el encabezado de cada data.
+
+```{r}
+library(fpp2)
+head(melsyd)
+```
+```{r}
+head(a10)
+```
+
+Realizamos las gráficas
+
+```{r}
+library(fpp2)
+autoplot(melsyd[,"Economy.Class"]) +
+  ggtitle("Economy class passengers: Melbourne-Sydney") +
+  xlab("Year") +
+  ylab("Thousands")
+```
+
+
+```{r}
+library(fpp2)
+autoplot(a10) +
+  ggtitle("Antidiabetic drug sales") +
+  ylab("$ million") +
+  xlab("Year")
+```
+
+
