@@ -1,0 +1,43 @@
+---
+title: "Autocorrelación"
+author: "JARO"
+date: "23/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(fpp2)
+```
+
+# AUTOCORRELACIÓN
+
+Hay varios coeficientes de autocorrelación, correspondientes a cada panel en el gráfico de retardo. Por ejemplo,
+$r_{1}$ mide la relación entre $y_{t}$ e $y_{t-1}$, $r_{2}$ mide la relación entre $y_{t}$ y $y_{t-2}$, y así sucesivamente.
+
+Los primeros nueve coeficientes de autocorrelación para los datos de producción de cerveza se dan en la siguiente tabla.
+
+```{r}
+ggAcf(beer)
+```
+
+# Tendencia y estacionalidad en parcelas ACF
+
+Cuando los datos tienen una tendencia, las autocorrelaciones para los rezagos pequeños tienden a ser grandes y positivos porque las observaciones cercanas en el tiempo también están cerca de tamaño. Por lo tanto, la ACF de las series de tiempo temeras tiende a tener valores positivos que disminuyen lentamente a medida que aumenten los retrasos.
+
+Cuando los datos son estacionales, las autocorrelaciones serán más grandes para los retrasos estacionales (en múltiplos de la frecuencia estacional) que para otros retrasos.
+
+Cuando los datos son intencionados y estacionales, usted ve una combinación de estos efectos. La serie de demanda de electricidad australianos mensuales trazada muestra tendencia y estacionalidad. Su ACF se muestra en la Figura
+
+```{r}
+aelec <- window(elec, start=1980)
+autoplot(aelec) + xlab("Year") + ylab("GWh")
+```
+
+
+```{r}
+ggAcf(aelec,lag=48)
+```
+
+La lenta disminución del ACF a medida que aumentan los rezagos se debe a la tendencia, mientras que la forma “festoneada” se debe a la estacionalidad. 
+
