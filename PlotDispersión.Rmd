@@ -1,0 +1,61 @@
+---
+title: "Gráficos Dispersión"
+author: "JARO"
+date: "23/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# GRÁFICOS DE DISPERSIÓN
+
+Los gráficos discutidos hasta ahora son útiles para visualizar series de tiempo individuales. También es útil explorar las relaciones entre series de tiempo.
+
+La siguiente gráfica muestra dos series de tiempo: demanda de electricidad cada media hora (en gigavatios) y temperatura (en grados Celsius), para 2014 en Victoria, Australia. Las temperaturas son para Melbourne, la ciudad más grande de Victoria, mientras que los valores de demanda son para todo el estado.
+
+A continuación se pondrá en FALSE el atributo "facets" dentro de la función "autoplot"
+
+```{r}
+autoplot(elecdemand[,c("Demand","Temperature")], facets=F) +
+  xlab("Year: 2014") + ylab("") +
+  ggtitle("Half-hourly electricity demand: Victoria, Australia")
+```
+
+A continuación se pondrá en TRUE el atributo "facets" dentro de la función "autoplot"
+
+```{r}
+autoplot(elecdemand[,c("Demand","Temperature")], facets=T) +
+  xlab("Year: 2014") + ylab("") +
+  ggtitle("Half-hourly electricity demand: Victoria, Australia")
+```
+
+Se ve más elegante "facest=TRUE".
+
+Podemos estudiar la relación entre la demanda y la temperatura trazando una serie frente a la otra. 
+
+```{r}
+qplot(Temperature, Demand, data=as.data.frame(elecdemand)) +
+  ylab("Demand (GW)") + xlab("Temperature (Celsius)")
+```
+
+# MATRICES DE GRÁFICOS DE DISPERSIÓN
+
+Cuando hay varias variables predictoras potenciales, es útil graficar cada variable frente a otras variables. Considere las cinco series de tiempo que se muestran en la siguiente gráfica, que muestra el número de visitantes trimestrales para cinco regiones de Nueva Gales del Sur, Australia. 
+
+```{r}
+autoplot(visnights[,1:5], facets=TRUE) +
+  ylab("Number of visitor nights each quarter (millions)")
+```
+
+Para ver las relaciones entre estas cinco series de tiempo, podemos graficar cada serie de tiempo con las demás. Estos gráficos se pueden organizar en una matriz de gráficos de dispersión, como se muestra en la Figura 2.12. (Este gráfico requiere la instalación del paquete GGally). 
+
+```{r}
+library(GGally)
+GGally::ggpairs(as.data.frame(visnights[,1:5]))
+```
+
