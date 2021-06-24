@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(forecast)
-library(tseries)
+library(fpp2)
 ```
 
 # CREAR OBJETO TS
