@@ -1,0 +1,39 @@
+---
+title: "Box-Cox"
+author: "JARO"
+date: "23/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## TRANSFORMACIÓN BOX - COX
+
+```{r}
+(lambda <- BoxCox.lambda(elec))
+```
+
+```{r}
+autoplot(elec)
+```
+
+
+```{r}
+autoplot(BoxCox(elec,lambda))
+```
+
+El ajuste del sesgo no se realiza de forma predeterminada en el paquete de pronóstico. Si desea que sus pronósticos sean un medio en lugar de medianos, use el argumento biasadj = verdadero cuando selecciona el parámetro de transformación de Cox-Cox. 
+
+```{r}
+fc <- rwf(eggs, drift=TRUE, lambda=0, h=50, level=80)
+fc2 <- rwf(eggs, drift=TRUE, lambda=0, h=50, level=80,
+  biasadj=TRUE)
+autoplot(eggs) +
+  autolayer(fc, series="Simple back transformation") +
+  autolayer(fc2, series="Bias adjusted", PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+
