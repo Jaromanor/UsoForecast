@@ -1,0 +1,76 @@
+---
+title: "Residuales"
+author: "JARO"
+date: "23/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## RESIDUOS
+
+Los "residuos" en un modelo de serie de tiempo son lo que queda después de ajustar un modelo. Para muchos (pero no todos) modelos de series de tiempo, los residuos son iguales a la diferencia entre las observaciones y los valores ajustados correspondientes. Los residuos deben:
+
+1. Los residuos no están correlacionados. Si existen correlaciones entre los residuales, entonces queda información en los residuales que debe usarse para calcular los pronósticos.
+
+2. Los residuos tienen media cero. Si los residuos tienen una media distinta de cero, los pronósticos están sesgados. 
+
+Si alguna de estas propiedades no se satisface, entonces el método de pronóstico puede modificarse para brindar mejores pronósticos. Ajustar el sesgo es fácil: si los residuos tienen una media m, simplemente agregue m a todos los pronósticos y se resuelve el problema del sesgo. Arreglar el problema de correlación es más difícil.
+
+
+Además de estas propiedades esenciales, es útil (pero no necesario) que los residuos también tengan las siguientes dos propiedades:
+
+3. Los residuales tienen varianza constante.
+4. Los residuos se distribuyen normalmente.
+
+
+Estas dos propiedades hacen que el cálculo de los intervalos de predicción sea más fácil. Sin embargo, un método de pronóstico que no satisface estas propiedades no puede mejorarse necesariamente. A veces, la aplicación de una transformación de box-Cox puede ayudar con estas propiedades, pero de lo contrario, generalmente hay poco que puede hacer para asegurarse de que sus residuos tengan una variación constante y una distribución normal. En su lugar, es necesario un enfoque alternativo para obtener intervalos de predicción.
+
+El siguiente gráfico muestra el precio de cierre diario de las acciones de Google (GOOG). El gran salto del día 166 corresponde al 18 de octubre de 2013, cuando el precio subió un 12% debido a los resultados inesperadamente sólidos del tercer trimestre. 
+
+```{r}
+#Necesita librería fpp2 para usar la data "goog200"
+autoplot(goog200) +
+  xlab("Day") + ylab("Closing Price (US$)") +
+  ggtitle("Google Stock (daily ending 6 December 2013)")
+```
+
+Los residuos obtenidos de pronóstico de esta serie utilizando el método ingenuo se muestran en la Figura. El residuo positivo grande es el resultado del salto de precios inesperado en el día 166. 
+
+```{r}
+res <- residuals(naive(goog200))
+autoplot(res) + xlab("Day") + ylab("") +
+  ggtitle("Residuals from naïve method")
+```
+
+```{r}
+gghistogram(res) + ggtitle("Histogram of residuals")
+```
+
+Histograma de los residuos del método ingenuo aplicado al precio de las acciones de Google. La cola derecha parece demasiado larga para una distribución normal. 
+
+```{r}
+ggAcf(res) + ggtitle("ACF of residuals")
+```
+
+ACF de los residuales del método ingenuo aplicado al precio de las acciones de Google. La falta de correlación sugiere que los pronósticos son buenos.
+
+En consecuencia, los pronósticos de este método probablemente serán bastante buenos, pero los intervalos de predicción que se calculan asumiendo una distribución normal pueden ser inexactos. 
+
+```{r}
+checkresiduals(naive(goog200))
+```
+
+
+
+
+
+
+
+
+
+
+
+
