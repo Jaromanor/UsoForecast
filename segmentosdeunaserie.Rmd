@@ -1,0 +1,66 @@
+---
+title: "PartesdeunaSerie"
+author: "JARO"
+date: "24/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# PARTICIONAR UNA SERIE
+
+La función de window () es útil cuando se extrae una parte de una serie de tiempo, como necesitamos al crear conjuntos de capacitación y pruebas. En la Función window () , especificamos el inicio y/o el final de la parte de la serie de tiempo requerida con valores de tiempo. Por ejemplo, esta serie empieza desde 1956 hasta el 2010.
+
+
+```{r}
+ausbeer
+```
+
+Ahora si solo queremos desde 1995 realizamos lo siguiente:
+
+```{r}
+window(ausbeer, start=1995)
+```
+
+Otra función útil es subconjunto () que permite más tipos de subconjuntos. Una gran ventaja de esta función es que permite el uso de índices para elegir un subconjunto. Por ejemplo, 
+
+```{r}
+subset(ausbeer, start=length(ausbeer)-4*5)
+```
+
+extrae los últimos 5 años de observaciones de ausbeer
+
+```{r}
+subset(ausbeer, start=length(ausbeer)-5*1)
+```
+Extrae últimos 2 años.
+
+También permite extraer todos los valores para una temporada específica. Por ejemplo:
+
+```{r}
+subset(ausbeer, quarter = 1)
+```
+
+extrae los primeros trimestres de todos los años.
+
+Finalmente, la cabeza y la cola son útiles para extraer las primeras o últimas observaciones. Por ejemplo, los últimos 5 años de ausbeer también se pueden obtener utilizando 
+
+```{r}
+tail(ausbeer, 4*5)
+```
+
+
+
+
+
+
+
+
+
+
+
