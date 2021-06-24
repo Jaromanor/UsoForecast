@@ -1,0 +1,57 @@
+---
+title: "Gráficos Estacionales"
+author: "JARO"
+date: "23/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# GRÁFICO ESTACIONAL
+
+Una gráfica estacional es similar a una gráfica de tiempo, excepto que los datos se grafican contra las “estaciones” individuales en las que se observaron los datos. A continuación se ofrece un ejemplo que muestra las ventas de medicamentos antidiabéticos. 
+
+```{r}
+ggseasonplot(a10, year.labels=TRUE, year.labels.left=TRUE) +
+  ylab("$ million") +
+  ggtitle("Seasonal plot: antidiabetic drug sales")
+```
+
+Miremos si podemos hacer lo mismo con nuestra serie y1
+
+```{r}
+ggseasonplot(y1,year.labels=TRUE, year.labels.left=TRUE)
+```
+
+Una variación útil del gráfico estacional utiliza coordenadas polares. La configuración de polar = TRUE hace que el eje de la serie temporal sea circular en lugar de horizontal, como se muestra a continuación. 
+
+```{r}
+ggseasonplot(a10, polar=TRUE) +
+  ylab("$ million") +
+  ggtitle("Polar seasonal plot: antidiabetic drug sales")
+```
+
+
+# GRÁFICOS DE SUBSERIE ESTACIONAL
+
+Un gráfico alternativo que enfatiza los patrones estacionales es donde los datos de cada temporada se recopilan juntos en mini gráficos de tiempo separados. 
+
+```{r}
+ggsubseriesplot(a10) +
+  ylab("$ million") +
+  ggtitle("Seasonal subseries plot: antidiabetic drug sales")
+```
+
+Las líneas horizontales indican las medias de cada mes. Esta forma de gráfico permite ver claramente el patrón estacional subyacente y también muestra los cambios en la estacionalidad a lo largo del tiempo. Es especialmente útil para identificar cambios dentro de temporadas particulares. En este ejemplo, la trama no es particularmente reveladora; pero en algunos casos, esta es la forma más útil de ver los cambios estacionales a lo largo del tiempo. 
+
+
+
+
+
+
+
