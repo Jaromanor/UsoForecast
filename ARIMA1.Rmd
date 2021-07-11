@@ -1,0 +1,197 @@
+---
+title: "Arima:Estacionariedad"
+author: "JARO"
+date: "26/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(gridExtra)
+library(tseries)
+```
+
+# ESTACIONARIEDAD Y DIFERENCIA
+
+Una serie de tiempo estacionaria es aquella cuyas propiedades no dependen del momento en que se observa la serie. Así, las series de tiempo con tendencias, o con estacionalidad, no son estacionarias - la tendencia y la estacionalidad afectarán el valor de la serie de tiempo en tiempos diferentes. Por otro lado, una serie de ruido blanco es estacionaria; no importa cuando la observe, debería verse muy similar en cualquier momento.
+
+Calcular las diferencias entre observaciones consecutivas. Esto se conoce como diferenciación. 
+
+Las transformaciones como los logaritmos pueden ayudar a estabilizar la varianza de una serie de tiempo. La diferenciación puede ayudar a estabilizar la media de una serie de tiempo al eliminar los cambios en el nivel de una serie de tiempo y, por lo tanto, eliminar (o reducir) la tendencia y la estacionalidad. 
+
+Además de mirar el gráfico de tiempo de los datos, el gráfico de ACF también es útil para identificar series de tiempo no estacionarias. Para una serie de tiempo estacionaria, el ACF caerá a cero con relativa rapidez, mientras que el ACF de los datos no estacionarios disminuye lentamente. Además, para datos no estacionarios, el valor de r1 suele ser grande y positivo. 
+
+```{r}
+library(gridExtra)
+a<-ggAcf(goog200)+ggtitle("gf")
+b<-ggAcf(diff(goog200))
+grid.arrange(a,b,ncol=2)
+```
+
+La gráfica anterior muestra a la izquierda ACF para una serie no estacionaria y a la derecha se diferencia y se realiza el ACF (serie estacionaria).
+
+La prueba Ljung - Box ayuda a establecer si una series es o no estacionaria, la prueba para la serie sin difenciar y diferenciando es: 
+
+```{r}
+Box.test(goog200, lag=10, type="Ljung-Box")
+Box.test(diff(goog200), lag=10, type="Ljung-Box")
+```
+
+Donde la hipótesis nula afirma que la series es estacionaria.
+
+## Diferencia Estacional
+
+Una diferencia estacional es la diferencia entre una observación y la observación anterior de la misma temporada. Entonces:
+
+$$y^´_t=y_t-y_{t-m}$$
+
+Donde m es el número de temporadas. También se denominan "diferencias de retraso-m", ya que restamos la observación después de un retraso de m períodos. 
+
+Si los datos con diferencias estacionales parecen ser ruido blanco, se recomienda un modelo apropiado para los datos originales. 
+
+$$y^´_t=y_{t-m}+\epsilon_t$$
+Los pronósticos de este modelo son iguales a la última observación de la temporada relevante. Es decir, este modelo proporciona pronósticos estacionales ingenuos.
+
+El panel inferior de la Figura muestra las diferencias estacionales del logaritmo de los guiones mensuales para los medicamentos A10 (antidiabéticos) vendidos en Australia. La transformación y la diferenciación han hecho que la serie parezca relativamente estacionaria. 
+
+
+```{r}
+cbind("Ventas Mensuales ($million)" = a10,
+      "Ventas Mensuales en log" = log(a10),
+      "Cambio anual ventas en log" = diff(log(a10),12)) %>%
+  autoplot(facets=TRUE) +
+    xlab("Año") + ylab("") +
+    ggtitle("Ventas Drogas Antidiabéticas")
+```
+
+Para distinguir las diferencias estacionales de las diferencias ordinarias, a veces nos referimos a las diferencias ordinarias como "primeras diferencias", es decir, diferencias en el rezago 1.
+
+A veces es necesario tomar tanto una diferencia estacional como una primera diferencia para obtener datos estacionarios, como se muestra en la Figura siguiente. Aquí, los datos se transforman primero usando logaritmos (segundo panel), luego se calculan las diferencias estacionales (tercer panel). Los datos todavía parecen algo no estacionarios, por lo que se calculan muchas más primeras diferencias (panel inferior). 
+
+```{r}
+cbind("Billion kWh" = usmelec,
+      "Logs" = log(usmelec),
+      "Seasonally\n differenced logs" =
+        diff(log(usmelec),12),
+      "Doubly\n differenced logs" =
+        diff(diff(log(usmelec),12),1)) %>%
+  autoplot(facets=TRUE) +
+    xlab("Year") + ylab("") +
+    ggtitle("Monthly US net electricity generation")
+```
+
+Existe un cierto grado de subjetividad al seleccionar qué diferencias aplicar. Los datos con diferencias estacionales en la Figura 8.3 no muestran un comportamiento sustancialmente diferente de los datos con diferencias estacionales en la Figura 8.4. En el último caso, podríamos haber decidido detenernos con los datos diferenciados estacionalmente y no hacer una ronda adicional de diferenciación. En el primer caso, podríamos haber decidido que los datos no eran lo suficientemente estacionarios y tomar una ronda adicional de diferenciación. Algunas pruebas formales de diferenciación se analizan a continuación, pero siempre hay algunas opciones que se deben tomar en el proceso de modelado, y diferentes analistas pueden tomar decisiones diferentes. 
+
+Cuando se aplican tanto las diferencias estacionales como las primeras, no importa qué se haga primero: el resultado será el mismo. Sin embargo, si los datos tienen un patrón estacional fuerte, recomendamos que se haga primero la diferenciación estacional, porque la serie resultante a veces será estacionaria y no habrá necesidad de una primera diferencia adicional. Si la primera diferenciación se realiza primero, todavía habrá estacionalidad presente.
+
+Es importante que si se usa la diferenciación, las diferencias sean interpretables. Las primeras diferencias son el cambio entre una observación y la siguiente. Las diferencias estacionales son el cambio de un año a otro. Es poco probable que otros retrasos tengan mucho sentido interpretable y deben evitarse. 
+
+
+# PRUEBA DE RAÍZ UNITARIA
+
+Una forma de determinar de forma más objetiva si se requiere diferenciación es utilizar una prueba de raíz unitaria. Estas son pruebas de hipótesis estadísticas de estacionariedad que están diseñadas para determinar si se requiere diferenciación.
+
+Se encuentran disponibles varias pruebas de raíz unitaria, que se basan en diferentes supuestos y pueden dar lugar a respuestas contradictorias. En nuestro análisis, utilizamos la prueba de Kwiatkowski-Phillips-Schmidt-Shin (KPSS) (Kwiatkowski, Phillips, Schmidt y Shin, 1992). En esta prueba, la hipótesis nula es que los datos son estacionarios y buscamos evidencia de que la hipótesis nula es falsa. En consecuencia, valores p pequeños (por ejemplo, menos de 0,05) sugieren que se requiere diferenciación. La prueba se puede calcular usando la función ur.kpss () del paquete urca.
+
+Por ejemplo, apliquémoslo a los datos de precios de las acciones de Google. 
+
+```{r}
+library(urca)
+goog %>% ur.kpss() %>% summary()
+```
+
+El estadístico de prueba es mucho mayor que el valor crítico del 1%, lo que indica que se rechaza la hipótesis nula. Es decir, los datos no son estacionarios. Podemos diferenciar los datos y aplicar la prueba nuevamente. 
+
+```{r}
+goog %>% diff() %>% ur.kpss() %>% summary()
+
+```
+
+Esta vez, la estadística de prueba es pequeña y está dentro del rango que esperaríamos para datos estacionarios. Entonces podemos concluir que los datos diferenciados son estacionarios.
+
+Este proceso de utilizar una secuencia de pruebas KPSS para determinar el número apropiado de primeras diferencias se lleva a cabo mediante la función ndiffs (). 
+
+```{r}
+ndiffs(goog)
+```
+Como vimos en las pruebas de KPSS anteriores, se requiere una diferencia para que los datos de Google sean estacionarios.
+
+Una función similar para determinar si se requiere la diferenciación estacional es nsdiffs (), que usa la medida de fuerza estacional presentada en la Sección 6.7 para determinar el número apropiado de diferencias estacionales requeridas. No se sugieren diferencias estacionales si
+FS <0,64; de lo contrario, se sugiere una diferencia estacional.
+
+Podemos aplicar nsdiffs () a los datos de electricidad mensuales de EE. UU. Registrados. 
+
+```{r}
+usmelec %>% log() %>% nsdiffs()
+#> [1] 1
+usmelec %>% log() %>% diff(lag=12) %>% ndiffs()
+#> [1] 1
+```
+Debido a que nsdiffs () devuelve 1 (lo que indica que se requiere una diferencia estacional), aplicamos la función ndiffs () a los datos diferenciados estacionalmente. Estas funciones sugieren que deberíamos hacer tanto una diferencia estacional como una primera diferencia.
+
+# ACF Y PACF
+
+La ACF mide la relación entre $y_{t}$ y $y_{t-1}$, pero qué sucede con la relación entre $y_{t}$ y $y_{t-2}$.
+
+Para superar este problema, podemos utilizar autocorrelaciones parciales. Estos miden la relación entre $y_{t}$ y $y_{t-k}$ después de eliminar los efectos de los rezagos 1, 2, 3,…, k − 1. Entonces, la primera autocorrelación parcial es idéntica a la primera autocorrelación, porque no hay nada entre ellas para eliminar. Cada autocorrelación parcial se puede estimar como el último coeficiente en un modelo autorregresivo. Específicamente, αk, el k-ésimo coeficiente de autocorrelación parcial, es igual a la estimación de ϕk en un modelo AR (k). En la práctica, existen algoritmos más eficientes para calcular αk que ajustar todas estas autorregresiones, pero dan los mismos resultados.
+
+Las siguientes Figuras muestran las gráficas ACF y PACF para los datos de consumo de EE. UU. Las autocorrelaciones parciales tienen los mismos valores críticos de ± 1,96 / √T que para las autocorrelaciones ordinarias, y normalmente se muestran en el gráfico. 
+
+```{r}
+ggAcf(uschange[,"Consumption"])
+```
+
+
+```{r}
+ggPacf(uschange[,"Consumption"])
+```
+
+Si tanto p como q son mayores de cero, estos gráficos no ayudan mucho, ahora bien, si p>0 y q=0 entonces:
+
+"el ACF está decayendo exponencialmente o sinusoidal;
+hay un aumento significativo en el retraso p en el PACF, pero ninguno más allá del retraso p".
+
+Ahora si p=0 y q>0, entonces:
+
+"el PACF decae exponencialmente o es sinusoidal;
+hay un pico significativo en el rezago q en el ACF, pero ninguno más allá del rezago q".
+
+En la Figura del ACF vemos que hay tres picos, seguidos de un pico casi significativo en el retraso 4. En el PACF, hay tres picos significativos, y luego no hay picos significativos a partir de entonces (aparte de uno justo fuera de los límites en retraso 22). Podemos ignorar un pico significativo en cada gráfico si está fuera de los límites y no en los primeros rezagos. Después de todo, la probabilidad de que un pico sea significativo por casualidad es aproximadamente uno en veinte, y estamos trazando 22 picos en cada gráfico. El patrón en los primeros tres picos es el que esperaríamos de un ARIMA (3,0,0), ya que el PACF tiende a disminuir. Entonces, en este caso, ACF y PACF nos llevan a pensar que un modelo ARIMA (3,0,0) podría ser apropiado.
+
+#ESTIMACIÓN
+
+Con la información anterior se estima un ARMA (3,0,0)
+
+```{r}
+fit2 <- Arima(uschange[,"Consumption"], order=c(3,0,0))
+fit2
+```
+Este modelo es en realidad ligeramente mejor que el modelo identificado por auto.arima () (con un valor AICc de 340,67 en comparación con 342,08). La función auto.arima () no encontró este modelo porque no considera todos los modelos posibles en su búsqueda. Puede hacer que funcione más utilizando los argumentos paso a paso = FALSO y aproximación = FALSO: 
+
+```{r}
+fit3 <- auto.arima(uschange[,"Consumption"], seasonal=FALSE,
+  stepwise=FALSE, approximation=FALSE)
+fit3
+```
+
+
+También usamos el argumento estacional = FALSO para evitar que busque modelos ARIMA estacionales.
+
+Esta vez, auto.arima () ha encontrado el mismo modelo que supusimos de los gráficos ACF y PACF. Los pronósticos de este modelo ARIMA (3,0,0) son casi idénticos para el modelo ARIMA (1,0,3), por lo que no producimos el gráfico aquí. Este modelo ARIMA (1,0,3) se calculó con un autoarima sin ajustes al interior de la función a excepción de "seasonal = F".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
