@@ -1,0 +1,110 @@
+---
+title: "ModelosdeRegresión"
+author: "JARO"
+date: "25/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# REGRESIÓN LINEAL 
+
+Se muestra series de tiempo de cambios porcentuales trimestrales (tasas de crecimiento) del gasto de consumo personal real, y, y del ingreso personal disponible real, x, para los EE. UU. desde el primer trimestre de 1970 hasta el tercer trimestre de 2016. 
+
+```{r}
+autoplot(uschange[,c("Consumption","Income")]) +
+  ylab("% change") + xlab("Year")
+```
+
+En la siguiente Figura se muestra un diagrama de dispersión de los cambios en el consumo frente a los cambios en los ingresos junto con la línea de regresión estimada 
+
+```{r}
+uschange %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Income, y=Consumption)) +
+    ylab("Consumption (quarterly % change)") +
+    xlab("Income (quarterly % change)") +
+    geom_point() +
+    geom_smooth(method="lm", se=FALSE)
+#> `geom_smooth()` using formula 'y ~ x'
+```
+
+La ecuación se estima en R usando la función tslm (): 
+
+```{r}
+tslm(Consumption ~ Income, data=uschange)
+#> 
+#> Call:
+#> tslm(formula = Consumption ~ Income, data = uschange)
+#> 
+#> Coefficients:
+#> (Intercept)       Income  
+#>       0.545        0.281
+```
+
+
+Un diagrama de correlación para más de una variable:
+
+```{r}
+uschange %>%
+  as.data.frame() %>%
+  GGally::ggpairs()
+```
+
+```{r}
+fit.consMR <- tslm(
+  Consumption ~ Income + Production + Unemployment + Savings,
+  data=uschange)
+summary(fit.consMR)
+#> 
+#> Call:
+#> tslm(formula = Consumption ~ Income + Production + Unemployment + 
+#>     Savings, data = uschange)
+#> 
+#> Residuals:
+#>     Min      1Q  Median      3Q     Max 
+#> -0.8830 -0.1764 -0.0368  0.1525  1.2055 
+#> 
+#> Coefficients:
+#>              Estimate Std. Error t value Pr(>|t|)    
+#> (Intercept)   0.26729    0.03721    7.18  1.7e-11 ***
+#> Income        0.71448    0.04219   16.93  < 2e-16 ***
+#> Production    0.04589    0.02588    1.77    0.078 .  
+#> Unemployment -0.20477    0.10550   -1.94    0.054 .  
+#> Savings      -0.04527    0.00278  -16.29  < 2e-16 ***
+#> ---
+#> Signif. codes:  
+#> 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Residual standard error: 0.329 on 182 degrees of freedom
+#> Multiple R-squared:  0.754,  Adjusted R-squared:  0.749 
+#> F-statistic:  139 on 4 and 182 DF,  p-value: <2e-16
+```
+
+Los siguientes gráficos muestran los valores reales comparados con los valores ajustados para el cambio porcentual en la serie de gastos de consumo de EE. UU. El gráfico de tiempo de la Figura 5.6 muestra que los valores ajustados siguen bastante de cerca los datos reales. Esto se verifica por la fuerte relación positiva que muestra el diagrama de dispersión en la Figura 5.7. 
+
+```{r}
+autoplot(uschange[,'Consumption'], series="Data") +
+  autolayer(fitted(fit.consMR), series="Fitted") +
+  xlab("Year") + ylab("") +
+  ggtitle("Percent change in US consumption expenditure") +
+  guides(colour=guide_legend(title=" "))
+```
+
+```{r}
+cbind(Data = uschange[,"Consumption"],
+      Fitted = fitted(fit.consMR)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Data, y=Fitted)) +
+    geom_point() +
+    ylab("Fitted (predicted values)") +
+    xlab("Data (actual values)") +
+    ggtitle("Percent change in US consumption expenditure") +
+    geom_abline(intercept=0, slope=1)
+```
+
