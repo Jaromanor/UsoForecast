@@ -1,0 +1,50 @@
+---
+title: "ErrorPrediccion"
+author: "JARO"
+date: "24/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# ERRORES DE PREDICCIÓN
+
+Tenga en cuenta que los errores de pronóstico son diferentes de los residuales de dos maneras. Primero, los residuos se calculan en el conjunto de entrenamiento mientras que los errores de pronóstico se calculan en el conjunto de prueba. En segundo lugar, los residuos se basan en pronósticos de un paso, mientras que los errores de pronóstico pueden involucrar pronósticos de varios pasos.
+
+## Errores dependientes de la escala
+
+Un método de pronóstico que minimice el MAE conducirá a pronósticos de la mediana, mientras que minimizar el RMSE conducirá a pronósticos de la media. En consecuencia, el RMSE también se utiliza mucho, a pesar de ser más difícil de interpretar. 
+
+## Errores porcentuales 
+
+Los errores porcentuales tienen la ventaja de estar sin unidad, y así se usan con frecuencia para comparar las actuaciones de pronóstico entre los conjuntos de datos. La medida más utilizada es: 
+
+Mean absolute percentage error: MAPE
+
+Las medidas basadas en errores porcentuales tienen la desventaja de ser infinitas o indefinidas si yt = 0 para cualquier t en el período de interés, y tener valores extremos si cualquier yt es cercano a cero. Otro problema con los errores porcentuales que a menudo se pasa por alto es que asumen que la unidad de medida tiene un cero significativo. Por ejemplo, un error porcentual no tiene sentido al medir la precisión de los pronósticos de temperatura en las escalas Fahrenheit o Celsius, porque la temperatura tiene un punto cero arbitrario.
+
+También tienen la desventaja de que imponen una penalización mayor a los errores negativos que a los positivos. Esta observación llevó al uso del llamado MAPE “simétrico” (sMAPE) propuesto por Armstrong (1978, p. 348), que se utilizó en el concurso de predicción M3. Está definido por
+
+Sin embargo, si yt está cerca de cero, es probable que ^ yt también esté cerca de cero. Por lo tanto, la medida aún implica la división por un número cercano a cero, lo que hace que el cálculo sea inestable. Además, el valor de sMAPE puede ser negativo, por lo que en realidad no es una medida de "errores porcentuales absolutos" en absoluto. 
+
+
+## Errores escalados
+Hyndman y Koehler (2006) propusieron errores escalados como una alternativa al uso de errores porcentuales al comparar la precisión del pronóstico entre series con diferentes unidades. Propusieron escalar los errores en función del MAE de entrenamiento a partir de un método de pronóstico simple.
+
+Para una serie de tiempo no estacional, una forma útil de definir un error escalado utiliza pronósticos ingenuos: 
+
+
+
+
+
+
+
+
+
+
+
