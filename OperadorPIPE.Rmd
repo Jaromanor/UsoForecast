@@ -1,0 +1,40 @@
+---
+title: "Operador PIPE"
+author: "JARO"
+date: "24/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# OPERADOR PIPE
+
+La fealdad del código R anterior hace que esta sea una buena oportunidad para introducir algunas formas alternativas de encadenar funciones R. En el código anterior, estamos anidando funciones dentro de funciones dentro de funciones, por lo que debe leer el código de adentro hacia afuera, lo que dificulta la comprensión de lo que se está calculando. En su lugar, podemos usar el operador de tubería%>% de la siguiente manera. 
+
+```{r}
+goog200 %>% tsCV(forecastfunction=rwf, drift=TRUE, h=1) -> e
+e^2 %>% mean(na.rm=TRUE) %>% sqrt()
+#> [1] 6.233
+goog200 %>% rwf(drift=TRUE) %>% residuals() -> res
+res^2 %>% mean(na.rm=TRUE) %>% sqrt()
+#> [1] 6.169
+```
+
+Por ejemplo, la tercera línea anterior se puede leer como "Tome la serie goog200, páselo a rwf () con drift = TRUE, calcule los residuos resultantes y guárdelos como res".
+
+lo que es equivalente a:
+
+```{r}
+e <- tsCV(goog200, rwf, drift=TRUE, h=1)
+sqrt(mean(e^2, na.rm=TRUE))
+#> [1] 6.233
+sqrt(mean(residuals(rwf(goog200, drift=TRUE))^2, na.rm=TRUE))
+#> [1] 6.169
+```
+
+
