@@ -1,0 +1,47 @@
+---
+title: "Intervalos"
+author: "JARO"
+date: "24/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+```
+
+# INTERVALOS DE PREDICCIÓN
+
+Cuando una distribución normal de los errores de pronóstico es una suposición irrazonable, una alternativa es usar bootstrapping, que solo asume que los errores de pronóstico no están correlacionados. 
+
+```{r}
+naive(goog200, bootstrap=TRUE)
+#>     Point Forecast Lo 80 Hi 80 Lo 95 Hi 95
+#> 201          531.5 525.7 537.8 522.9 542.9
+#> 202          531.5 523.2 539.5 519.4 547.0
+#> 203          531.5 520.9 541.2 516.7 552.3
+#> 204          531.5 519.0 543.0 514.0 560.3
+#> 205          531.5 517.5 544.6 511.8 582.1
+#> 206          531.5 516.1 545.9 509.5 582.4
+#> 207          531.5 514.8 547.3 508.0 583.5
+#> 208          531.5 513.5 548.9 505.8 584.9
+#> 209          531.5 512.3 549.8 503.9 586.6
+#> 210          531.5 510.7 551.4 502.1 587.5
+```
+
+
+## Intervalos de predicción con transformaciones
+
+Si se ha utilizado una transformación, entonces el intervalo de predicción debe calcularse en la escala transformada y los puntos finales deben volver a transformarse para dar un intervalo de predicción en la escala original. Este enfoque conserva la cobertura de probabilidad del intervalo de predicción, aunque ya no será simétrico alrededor del pronóstico puntual.
+
+La transformación inversa de los intervalos de predicción se realiza automáticamente utilizando las funciones del paquete de pronóstico en R, siempre que haya utilizado el argumento lambda al calcular los pronósticos. 
+
+
+
+
+
+
+
+
