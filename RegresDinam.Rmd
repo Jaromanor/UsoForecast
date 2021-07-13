@@ -1,0 +1,160 @@
+---
+title: "RegresiónDinámica"
+author: "JARO"
+date: "13/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(gridExtra)
+library(tseries)
+library(lmtest)
+```
+
+Los modelos de series de tiempo de los dos capítulos anteriores permiten la inclusión de información de observaciones pasadas de una serie, pero no la inclusión de otra información que también puede ser relevante. Por ejemplo, los efectos de las vacaciones, la actividad de la competencia, los cambios en la ley, la economía en general u otras variables externas, pueden explicar algunas de las variaciones históricas y pueden conducir a pronósticos más precisos. Por otro lado, los modelos de regresión en el Capítulo 5 permiten la inclusión de mucha información relevante de las variables predictoras, pero no permiten la dinámica sutil de series de tiempo que se puede manejar con los modelos ARIMA. En este capítulo, consideramos cómo extender los modelos ARIMA para permitir que se incluya otra información en los modelos. 
+
+
+Ejemplo: consumo e ingresos personales de EE. UU.
+El gráfico muestra los cambios trimestrales en el gasto de consumo personal y el ingreso personal disponible desde 1970 hasta el tercer trimestre de 2016. Nos gustaría pronosticar cambios en los gastos basados en cambios en los ingresos. Un cambio en los ingresos no se traduce necesariamente en un cambio instantáneo en el consumo (p. Ej., Después de la pérdida de un trabajo, puede llevar algunos meses reducir los gastos para tener en cuenta las nuevas circunstancias). Sin embargo, ignoraremos esta complejidad en este ejemplo y trataremos de medir el efecto instantáneo del cambio promedio del ingreso sobre el cambio promedio del gasto de consumo. 
+
+```{r}
+data(uschange)
+head(uschange)
+```
+
+```{r}
+autoplot(uschange[,1:2], facets=TRUE) +
+  xlab("Year") + ylab("") +
+  ggtitle("Quarterly changes in US consumption
+    and personal income")
+```
+
+```{r}
+(fit <- auto.arima(uschange[,"Consumption"],
+  xreg=uschange[,"Income"]))
+```
+
+Los datos ya son claramente estacionarios (ya que estamos considerando cambios porcentuales en lugar de gastos e ingresos brutos), por lo que no es necesario establecer diferencias. El modelo ajustado es 
+
+
+$$y_{t}=0.599+0.203x_{t}+n_{t}$$
+$$n_{t}=0.692n_{t-1}+\epsilon_{t}-0.576\epsilon_{t-1}+0.198\epsilon_{t-2}$$
+
+$$\epsilon_{t}\~NID(0,0.322)$$
+
+Podemos recuperar estimaciones de las series ηt y εt utilizando la función de residuos (). 
+
+```{r}
+cbind("Regression Errors" = residuals(fit, type="regression"),
+      "ARIMA errors" = residuals(fit, type="innovation")) %>%
+  autoplot(facets=TRUE)
+```
+
+Son los errores ARIMA los que deberían parecerse a una serie de ruido blanco. 
+
+```{r}
+checkresiduals(fit)
+```
+
+## Predecir
+
+Para pronosticar usando un modelo de regresión con errores ARIMA, necesitamos pronosticar la parte de regresión del modelo y la parte ARIMA del modelo, y combinar los resultados. Al igual que con los modelos de regresión ordinarios, para obtener pronósticos, primero debemos pronosticar los predictores. Cuando los predictores se conocen en el futuro (por ejemplo, variables relacionadas con el calendario como la hora, el día de la semana, etc.), esto es sencillo. Pero cuando los predictores son en sí mismos desconocidos, debemos modelarlos por separado o usar valores futuros asumidos para cada predictor. 
+
+Calcularemos los pronósticos para los próximos ocho trimestres asumiendo que los cambios porcentuales futuros en el ingreso personal disponible serán iguales al cambio porcentual medio de los últimos cuarenta años. 
+
+```{r}
+fcast <- forecast(fit, xreg=rep(mean(uschange[,2]),8))
+autoplot(fcast) + xlab("Year") +
+  ylab("Percentage change")
+```
+
+Los intervalos de predicción para este modelo son más estrechos que los del modelo desarrollado en la Sección 8.5 porque ahora podemos explicar parte de la variación en los datos utilizando el predictor de ingresos.
+
+Es importante darse cuenta de que los intervalos de predicción de los modelos de regresión (con o sin errores ARIMA) no tienen en cuenta la incertidumbre en los pronósticos de los predictores. Por lo tanto, deben interpretarse como condicionales a los valores futuros asumidos (o estimados) de las variables predictoras. 
+
+##Ejemplo: previsión de la demanda de electricidad
+
+La demanda diaria de electricidad se puede modelar en función de la temperatura. Como se puede observar en la factura de la luz, se consume más electricidad en los días fríos debido a la calefacción y en los días calurosos debido al aire acondicionado. La mayor demanda en los días fríos y calurosos se refleja en la forma de U de la Figura 9.5, donde se representa la demanda diaria frente a la temperatura máxima diaria.
+
+```{r}
+data(elecdaily)
+head(elecdaily)
+str(elecdaily)
+summary(elecdaily)
+```
+
+```{r}
+elecdaily%>%as.data.frame()%>%
+ggplot(aes(x=Temperature, y=Demand)) +
+    ylab("electricity demand") +
+    xlab("maximum daily temperature") +
+    geom_point()
+```
+
+Los datos se almacenan como elecdaly incluyendo la demanda diaria total, una variable indicadora para los días laborables (un día laborable se representa con 1 y un día no laborable se representa con 0) y las temperaturas máximas diarias. Debido a que existe una estacionalidad semanal, la frecuencia se ha establecido en 7. La figura 9.6 muestra la serie de tiempo tanto de la demanda diaria como de las temperaturas máximas diarias. Los gráficos destacan la necesidad de un modelo dinámico y no lineal. 
+
+
+```{r}
+autoplot(elecdaily[,c(1,3)],facets=TRUE)+
+  ylab("")
+```
+
+En este ejemplo, ajustamos un modelo de regresión cuadrática con errores ARMA usando la función auto.arima (). 
+
+```{r}
+xreg <- cbind(MaxTemp = elecdaily[, "Temperature"],
+              MaxTempSq = elecdaily[, "Temperature"]^2,
+              Workday = elecdaily[, "WorkDay"])
+```
+
+```{r}
+fit <- auto.arima(elecdaily[, "Demand"], xreg = xreg)
+```
+
+```{r}
+fit
+```
+
+```{r}
+checkresiduals(fit)
+```
+
+El modelo tiene una autocorrelación significativa en los residuos, lo que significa que los intervalos de predicción pueden no proporcionar una cobertura precisa. Además, el histograma de los residuos muestra un valor atípico positivo, que también afectará la cobertura de los intervalos de predicción.
+
+Utilizando el modelo estimado, pronosticamos 14 días antes a partir del jueves 1 de enero de 2015 (un día no laborable es un día festivo para el día de Año Nuevo). En este caso, podríamos obtener previsiones meteorológicas de la oficina meteorológica para los próximos 14 días. Pero por el bien de la ilustración, usaremos pronósticos basados en escenarios (como se introdujo en la Sección 5.6) donde establecemos la temperatura para los próximos 14 días a 26 grados constantes. 
+
+```{r}
+fcast <- forecast(fit,
+  xreg = cbind(MaxTemp=rep(26,14), MaxTempSq=rep(26^2,14),
+    Workday=c(0,1,0,0,1,1,1,1,1,0,0,1,1,1)))
+autoplot(fcast) + ylab("Electricity demand (GW)")
+```
+
+Las previsiones puntuales parecen razonables para las dos primeras semanas de 2015. La ralentización de la demanda eléctrica a finales de 2014 (debido a que mucha gente se va de vacaciones de verano) ha provocado que las previsiones para las próximas dos semanas muestren valores de demanda igualmente bajos. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
