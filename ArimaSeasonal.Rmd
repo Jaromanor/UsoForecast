@@ -2,7 +2,9 @@
 title: "SeasonalArima"
 author: "JARO"
 date: "13/7/2021"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -124,21 +126,22 @@ A continuación, intentaremos utilizar el algoritmo ARIMA automático. La ejecuc
 ### Evaluación del conjunto de prueba:
 Compararemos algunos de los modelos ajustados hasta ahora utilizando un conjunto de pruebas que consta de datos de los dos últimos años. Por lo tanto, ajustamos los modelos utilizando datos de julio de 1991 a junio de 2006 y pronosticamos las ventas de guiones para julio de 2006 a junio de 2008. Los resultados se resumen en la siguiente tabla.
 
-Model	                RMSE
-ARIMA(3,0,1)(0,1,2)12 0.0622
-ARIMA(3,0,1)(1,1,1)12 0.0630
-ARIMA(2,1,3)(0,1,1)12 0.0634
-ARIMA(2,1,1)(0,1,2)12 0.0634
-ARIMA(2,1,2)(0,1,2)12 0.0635
-ARIMA(3,0,3)(0,1,1)12 0.0637
-ARIMA(3,0,1)(0,1,1)12 0.0644
-ARIMA(3,0,2)(0,1,1)12 0.0644
-ARIMA(3,0,2)(2,1,0)12 0.0645
-ARIMA(3,0,1)(2,1,0)12 0.0646
-ARIMA(4,0,2)(0,1,1)12 0.0648
-ARIMA(4,0,3)(0,1,1)12 0.0648
-ARIMA(3,0,0)(2,1,0)12 0.0661
-ARIMA(3,0,1)(1,1,0)12 0.0679
+|Model|	                RMSE
+---|---
+ARIMA(3,0,1)(0,1,2)12 | 0.0622
+ARIMA(3,0,1)(1,1,1)12 | 0.0630
+ARIMA(2,1,3)(0,1,1)12 | 0.0634
+ARIMA(2,1,1)(0,1,2)12 | 0.0634
+ARIMA(2,1,2)(0,1,2)12 | 0.0635
+ARIMA(3,0,3)(0,1,1)12 | 0.0637
+ARIMA(3,0,1)(0,1,1)12 | 0.0644
+ARIMA(3,0,2)(0,1,1)12 | 0.0644
+ARIMA(3,0,2)(2,1,0)12 | 0.0645
+ARIMA(3,0,1)(2,1,0)12 | 0.0646
+ARIMA(4,0,2)(0,1,1)12 | 0.0648
+ARIMA(4,0,3)(0,1,1)12 | 0.0648
+ARIMA(3,0,0)(2,1,0)12 | 0.0661
+ARIMA(3,0,1)(1,1,0)12 | 0.0679
 
 Los modelos elegidos manualmente y con auto.arima () se encuentran entre los cuatro primeros modelos en función de sus valores de RMSE.
 
