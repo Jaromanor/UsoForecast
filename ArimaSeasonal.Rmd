@@ -1,0 +1,252 @@
+---
+title: "SeasonalArima"
+author: "JARO"
+date: "13/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(gridExtra)
+library(tseries)
+library(lmtest)
+```
+
+$(1-\phi_1 B)(1-\Phi_1 B^4)(1-B)(1-B^4)y_t = (1+\theta_1 B)(1+\Theta B^4)\epsilon_t $
+
+
+## Ejemplo 1
+
+Describiremos el procedimiento de modelado ARIMA estacional utilizando datos trimestrales del comercio minorista europeo de 1996 a 2011. Los datos se representan en la Figura 8.17. 
+
+
+```{r}
+autoplot(euretail) + ylab("Retail index") + xlab("Year")
+```
+
+Los datos son claramente no estacionarios, con cierta estacionalidad, por lo que primero tomaremos una diferencia estacional. Los datos diferenciados estacionalmente se muestran en la Figura 8.18. Estos también parecen no ser estacionarios, por lo que tomamos una primera diferencia adicional, que se muestra en la figura 8.19. 
+
+
+```{r}
+euretail %>% diff(lag=4) %>% ggtsdisplay()
+```
+
+```{r}
+euretail %>% diff(lag=4) %>% diff() %>% ggtsdisplay()
+```
+
+Nuestro objetivo ahora es encontrar un modelo ARIMA apropiado basado en el ACF y PACF que se muestran en la Figura 8.19. El aumento significativo en el retraso 1 en el ACF sugiere un componente MA (1) no estacional, y el aumento significativo en el retraso 4 en el ACF sugiere un componente MA (1) estacional. En consecuencia, partimos de un modelo ARIMA (0,1,1) (0,1,1) 4, que indica una primera diferencia estacional y componentes MA (1) no estacionales y estacionales. Los residuos del modelo ajustado se muestran en la Figura 8.20. (Por lógica análoga aplicada al PACF, también podríamos haber comenzado con un modelo ARIMA (1,1,0) (1,1,0) 4). 
+
+```{r}
+euretail %>%
+  Arima(order=c(0,1,1), seasonal=c(0,1,1)) %>%
+  residuals() %>% ggtsdisplay()
+```
+
+
+Tanto el ACF como el PACF muestran picos significativos en el retraso 2 y picos casi significativos en el retraso 3, lo que indica que es necesario incluir algunos términos no estacionales adicionales en el modelo. El AICc del modelo ARIMA (0,1,2) (0,1,1) 4 es 74,36, mientras que el del modelo ARIMA (0,1,3) (0,1,1) 4 es 68,53. También probamos otros modelos con términos AR, pero ninguno que dio un valor AICc menor. En consecuencia, elegimos el modelo ARIMA (0,1,3) (0,1,1) 4. Sus residuos se representan en la figura 8.21. Todos los picos están ahora dentro de los límites de importancia, por lo que los residuos parecen ser ruido blanco. La prueba de Ljung-Box también muestra que los residuos no tienen autocorrelaciones restantes. 
+
+```{r}
+fit3 <- Arima(euretail, order=c(0,1,3), seasonal=c(0,1,1))
+checkresiduals(fit3)
+```
+Por lo tanto, ahora tenemos un modelo ARIMA estacional que pasa las verificaciones requeridas y está listo para pronosticar. Los pronósticos del modelo para los próximos tres años se muestran en la Figura 8.22. Los pronósticos siguen la tendencia reciente en los datos, debido a la doble diferenciación. Los intervalos de predicción grandes y que aumentan rápidamente muestran que el índice de comercio minorista podría comenzar a aumentar o disminuir en cualquier momento, mientras que los pronósticos puntuales tienen una tendencia a la baja, los intervalos de predicción permiten que los datos tengan una tendencia al alza durante el período de pronóstico.
+
+```{r}
+fit3 %>% forecast(h=12) %>% autoplot()
+```
+
+Podríamos haber usado auto.arima () para hacer la mayor parte de este trabajo por nosotros. Hubiera dado el mismo resultado. 
+
+```{r}
+auto.arima(euretail)
+```
+
+
+
+## Ejemplo 2
+
+Ejemplo: venta de medicamentos corticosteroides en Australia
+Nuestro segundo ejemplo es más difícil. Intentaremos pronosticar las ventas mensuales de medicamentos corticosteroides en Australia. Estos se conocen como medicamentos H02 según el esquema de clasificación químico terapéutico anatómico.
+
+```{r}
+lh02 <- log(h02)
+cbind("H02 sales (million scripts)" = h02,
+      "Log H02 sales"=lh02) %>%
+  autoplot(facets=TRUE) + xlab("Year") + ylab("")
+```
+
+Los datos de julio de 1991 a junio de 2008 se representan en la Figura anterior. Hay un pequeño aumento en la varianza con el nivel, por lo que tomamos logaritmos para estabilizar la varianza.
+
+Los datos son fuertemente estacionales y obviamente no estacionarios, por lo que se utilizará la diferenciación estacional. Los datos diferenciados estacionalmente se muestran en la siguiente Figura. No está claro en este punto si deberíamos hacer otra diferencia o no. Decidimos no hacerlo, pero la elección no es obvia.
+
+Las últimas observaciones parecen ser diferentes (más variables) de los datos anteriores. Esto puede deberse al hecho de que los datos a veces se revisan cuando las ventas anteriores se informan tarde. 
+
+```{r}
+lh02 %>% diff(lag=12) %>%
+  ggtsdisplay(xlab="Year",
+    main="Seasonally differenced H02 scripts")
+```
+
+En las gráficas de los datos diferenciados estacionalmente, hay picos en el PACF en los rezagos 12 y 24, pero nada en los rezagos estacionales en el ACF. Esto puede sugerir un término AR (2) estacional. En los rezagos no estacionales, hay tres picos significativos en el PACF, lo que sugiere un posible término AR (3). El patrón en el ACF no es indicativo de ningún modelo simple.
+
+En consecuencia, este análisis inicial sugiere que un posible modelo para estos datos es un ARIMA (3,0,0) (2,1,0)12. Ajustamos este modelo, junto con algunas variaciones, y calculamos los valores de AICc que se muestran en la siguiente tabla. 
+
+| Model |	AICc |
+:--: | :--:
+ARIMA(3,0,1)(0,1,2)12 | -485.5
+ARIMA(3,0,1)(1,1,1)12 | -484.2
+ARIMA(3,0,1)(0,1,1)12 | -483.7
+ARIMA(3,0,1)(2,1,0)12 | -476.3
+ARIMA(3,0,0)(2,1,0)12 | -475.1
+ARIMA(3,0,2)(2,1,0)12 | -474.9
+ARIMA(3,0,1)(1,1,0)12 | -463.4
+ 	
+De estos modelos, el mejor es el modelo ARIMA (3,0,1) (0,1,2) 12 (es decir, tiene el valor AICc más pequeño).
+
+```{r}
+(fit <- Arima(h02, order=c(3,0,1), seasonal=c(0,1,2),
+  lambda=0))
+```
+
+```{r}
+checkresiduals(fit, lag=36)
+```
+
+Los residuos de este modelo se muestran en la Figura 8.25. Hay algunos picos significativos en el ACF y el modelo no pasa la prueba de Ljung-Box. El modelo aún se puede usar para pronosticar, pero los intervalos de predicción pueden no ser precisos debido a los residuales correlacionados.
+
+A continuación, intentaremos utilizar el algoritmo ARIMA automático. La ejecución de auto.arima () con todos los argumentos dejados en sus valores predeterminados condujo a un modelo ARIMA (2,1,1) (0,1,2) 12. Sin embargo, el modelo aún no supera la prueba de Ljung-Box durante 36 rezagos. A veces, simplemente no es posible encontrar un modelo que pase todas las pruebas.
+
+
+### Evaluación del conjunto de prueba:
+Compararemos algunos de los modelos ajustados hasta ahora utilizando un conjunto de pruebas que consta de datos de los dos últimos años. Por lo tanto, ajustamos los modelos utilizando datos de julio de 1991 a junio de 2006 y pronosticamos las ventas de guiones para julio de 2006 a junio de 2008. Los resultados se resumen en la siguiente tabla.
+
+Model	                RMSE
+ARIMA(3,0,1)(0,1,2)12 0.0622
+ARIMA(3,0,1)(1,1,1)12 0.0630
+ARIMA(2,1,3)(0,1,1)12 0.0634
+ARIMA(2,1,1)(0,1,2)12 0.0634
+ARIMA(2,1,2)(0,1,2)12 0.0635
+ARIMA(3,0,3)(0,1,1)12 0.0637
+ARIMA(3,0,1)(0,1,1)12 0.0644
+ARIMA(3,0,2)(0,1,1)12 0.0644
+ARIMA(3,0,2)(2,1,0)12 0.0645
+ARIMA(3,0,1)(2,1,0)12 0.0646
+ARIMA(4,0,2)(0,1,1)12 0.0648
+ARIMA(4,0,3)(0,1,1)12 0.0648
+ARIMA(3,0,0)(2,1,0)12 0.0661
+ARIMA(3,0,1)(1,1,0)12 0.0679
+
+Los modelos elegidos manualmente y con auto.arima () se encuentran entre los cuatro primeros modelos en función de sus valores de RMSE.
+
+Cuando los modelos se comparan utilizando valores AICc, es importante que todos los modelos tengan los mismos órdenes de diferenciación. Sin embargo, al comparar modelos utilizando un conjunto de pruebas, no importa cómo se produjeron los pronósticos, las comparaciones siempre son válidas. En consecuencia, en la tabla anterior, podemos incluir algunos modelos con solo diferenciación estacional y algunos modelos con diferenciación tanto primera como estacional, mientras que en la tabla anterior que contiene valores AICc, solo comparamos modelos con diferenciación estacional pero sin primera diferenciación.
+
+Ninguno de los modelos considerados aquí pasa todas las pruebas residuales. En la práctica, normalmente usaríamos el mejor modelo que pudiéramos encontrar, incluso si no pasó todas las pruebas.
+
+Los pronósticos del modelo ARIMA (3,0,1) (0,1,2) 12 (que tiene el valor RMSE más bajo en el conjunto de prueba y el mejor valor AICc entre los modelos con solo diferenciación estacional) se muestran en la Figura 8.26. 
+
+```{r}
+h02 %>%
+  Arima(order=c(3,0,1), seasonal=c(0,1,2), lambda=0) %>%
+  forecast() %>%
+  autoplot() +
+    ylab("H02 sales (million scripts)") + xlab("Year")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
