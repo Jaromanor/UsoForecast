@@ -12,6 +12,7 @@ library(forecast)
 library(fpp2)
 library(gridExtra)
 library(tseries)
+library(lmtest)
 ```
 
 # ESTACIONARIEDAD Y DIFERENCIA
@@ -161,7 +162,7 @@ hay un pico significativo en el rezago q en el ACF, pero ninguno más allá del 
 
 En la Figura del ACF vemos que hay tres picos, seguidos de un pico casi significativo en el retraso 4. En el PACF, hay tres picos significativos, y luego no hay picos significativos a partir de entonces (aparte de uno justo fuera de los límites en retraso 22). Podemos ignorar un pico significativo en cada gráfico si está fuera de los límites y no en los primeros rezagos. Después de todo, la probabilidad de que un pico sea significativo por casualidad es aproximadamente uno en veinte, y estamos trazando 22 picos en cada gráfico. El patrón en los primeros tres picos es el que esperaríamos de un ARIMA (3,0,0), ya que el PACF tiende a disminuir. Entonces, en este caso, ACF y PACF nos llevan a pensar que un modelo ARIMA (3,0,0) podría ser apropiado.
 
-#ESTIMACIÓN
+# ESTIMACIÓN
 
 Con la información anterior se estima un ARMA (3,0,0)
 
@@ -183,6 +184,96 @@ También usamos el argumento estacional = FALSO para evitar que busque modelos A
 Esta vez, auto.arima () ha encontrado el mismo modelo que supusimos de los gráficos ACF y PACF. Los pronósticos de este modelo ARIMA (3,0,0) son casi idénticos para el modelo ARIMA (1,0,3), por lo que no producimos el gráfico aquí. Este modelo ARIMA (1,0,3) se calculó con un autoarima sin ajustes al interior de la función a excepción de "seasonal = F".
 
 
+## Ejemplo
+
+Aplicaremos este procedimiento a los datos de pedidos de equipos eléctricos ajustados estacionalmente que se muestran en la Figura.
+
+```{r}
+autoplot(elecequip)
+```
+
+Parece tener componente estacional. Vamos a descomponer la serie:
+
+```{r}
+serie1 <- stl(elecequip,s.window='periodic')
+autoplot(serie1)
+```
+
+Ahora vamos ajustar los datos eliminando el componente estacional.
+
+```{r}
+serie2 <- seasadj(serie1)
+autoplot(serie2)
+```
+
+El proceso anterior se puede hacer con pipeline, así:
+
+```{r}
+elecequip%>%stl(s.window='periodic')%>%seasadj()->serie3
+autoplot(serie3)
+```
+
+
+La gráfica de tiempo muestra algunos cambios repentinos, particularmente la gran caída en 2008/2009. Estos cambios se deben al entorno económico mundial. De lo contrario, no hay nada inusual en el gráfico de tiempo y parece que no es necesario realizar ningún ajuste de datos. 
+
+No hay evidencia de cambio de varianza, por lo que no haremos una transformación de Box-Cox.
+
+Los datos son claramente no estacionarios, ya que la serie se desplaza hacia arriba y hacia abajo durante largos períodos. En consecuencia, tomaremos una primera diferencia de los datos. Los datos diferenciados se muestran en la Figura 8.13. Estos parecen estacionarios, por lo que no consideraremos más diferencias. 
+
+```{r}
+serie2 %>% diff() %>% ggtsdisplay(main="")
+```
+
+El PACF que se muestra en la Figura 8.13 sugiere un modelo AR (3). Entonces, un modelo candidato inicial es un ARIMA (3,1,0). No hay otros modelos candidatos obvios 
+
+Encajamos un modelo ARIMA (3,1,0) junto con variaciones que incluyen ARIMA (4,1,0), ARIMA (2,1,0), ARIMA (3,1,1), etc. De estos, el ARIMA (3,1,1) tiene un valor AICc ligeramente menor
+
+```{r}
+fit <- Arima(serie2,order = c(3,1,1))
+fit
+coeftest(fit)
+```
+
+El gráfico ACF de los residuos del modelo ARIMA (3,1,1) muestra que todas las autocorrelaciones están dentro de los límites del umbral, lo que indica que los residuos se comportan como ruido blanco. Una prueba de baúl arroja un valor p grande, lo que también sugiere que los residuos son ruido blanco. 
+
+
+```{r}
+checkresiduals(fit)
+```
+
+
+Se muestran las previsiones del modelo elegido:
+
+```{r}
+autoplot(forecast(fit))
+```
+
+qué modelo mediante autoarima sin modificar y modificado?
+
+```{r}
+#Sin modificar
+fit1 <- auto.arima(serie2)
+fit1
+```
+
+
+```{r}
+fit2 <- auto.arima(serie2,seasonal=FALSE,
+  stepwise=FALSE, approximation=FALSE)
+fit2
+```
+
+```{r}
+autoplot(fit)
+```
+
+## Predicción
+
+Expanda la ecuación ARIMA para que yt esté en el lado izquierdo y todos los demás términos estén en el derecho
+
+Reescribe la ecuación reemplazando t con T + h.
+
+En el lado derecho de la ecuación, reemplace las observaciones futuras con sus pronósticos, los errores futuros con cero y los errores pasados con los residuos correspondientes. 
 
 
 
