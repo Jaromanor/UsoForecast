@@ -1,0 +1,85 @@
+---
+title: "var"
+author: "JARO"
+date: "22/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(forecast)
+library(fpp2)
+library(gridExtra)
+library(tseries)
+library(lmtest)
+library(hts)
+library(tidyverse)
+library(dplyr)
+```
+
+## Autorregresiones vectoriales
+
+Una limitación de los modelos que hemos considerado hasta ahora es que imponen una relación unidireccional: la variable de pronóstico está influenciada por las variables predictoras, pero no al revés. Sin embargo, hay muchos casos en los que también se debe permitir lo contrario, donde todas las variables se afectan entre sí. En la Sección 9.2, los cambios en el gasto de consumo personal (Ct) se pronosticaron con base en los cambios en el ingreso personal disponible (It). Sin embargo, en este caso una relación bidireccional puede ser más adecuada: un aumento de It conducirá a un aumento de Ct y viceversa. 
+
+Un ejemplo de tal situación ocurrió en Australia durante la crisis financiera global de 2008-2009. El gobierno australiano emitió paquetes de estímulo que incluían pagos en efectivo en diciembre de 2008, justo a tiempo para los gastos navideños. Como resultado, los minoristas reportaron fuertes ventas y se estimuló la economía. En consecuencia, los ingresos aumentaron. 
+
+Estas relaciones de retroalimentación están permitidas en el marco de vectores autorregresivos (VAR). En este marco, todas las variables se tratan simétricamente. Todos están modelados como si todos se influyeran entre sí por igual. En terminología más formal, ahora todas las variables se tratan como "endógenas". Para significar esto, ahora cambiamos la notación y escribimos todas las variables como
+ys: y1, t denota la t-ésima observación de la variable y1, y2, t denota la t-ésima observación de la variable y2, y así sucesivamente. 
+
+```{r}
+library(vars)
+```
+
+```{r}
+VARselect(uschange[,1:2], lag.max=8,
+  type="const")[["selection"]]
+#> AIC(n)  HQ(n)  SC(n) FPE(n) 
+#>      5      1      1      5
+```
+
+La salida R muestra la longitud de retraso seleccionada por cada uno de los criterios de información disponibles en el paquete vars. Existe una gran discrepancia entre el VAR (5) seleccionado por el AIC y el VAR (1) seleccionado por el BIC. Esto no es inusual. Como resultado, primero ajustamos un VAR (1), según lo seleccionado por el BIC. 
+
+```{r}
+var1 <- VAR(uschange[,1:2], p=1, type="const")
+serial.test(var1, lags.pt=10, type="PT.asymptotic")
+var2 <- VAR(uschange[,1:2], p=2, type="const")
+serial.test(var2, lags.pt=10, type="PT.asymptotic")
+```
+
+De manera similar a la metodología ARIMA univariante, probamos que los residuos no están correlacionados usando una prueba de Portmanteau25. Tanto un VAR (1) como un VAR (2) tienen alguna correlación serial residual y, por lo tanto, ajustamos un VAR (3). 
+
+```{r}
+var3 <- VAR(uschange[,1:2], p=3, type="const")
+serial.test(var3, lags.pt=10, type="PT.asymptotic")
+#> 
+#>  Portmanteau Test (asymptotic)
+#> 
+#> data:  Residuals of VAR object var3
+#> Chi-squared = 34, df = 28, p-value = 0.2
+```
+
+Los residuos de este modelo pasan la prueba de correlación serial. Los pronósticos generados por el VAR (3) se grafican en la Figura 11.10. 
+
+```{r}
+forecast(var3) %>%
+  autoplot() + xlab("Year")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
